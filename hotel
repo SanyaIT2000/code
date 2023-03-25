@@ -1,0 +1,95 @@
+#include <iostream>
+#include <cstring>
+#include <string>
+#include <cmath>
+#include <iomanip>
+using namespace std;
+struct Point {
+    double x;
+    double y;
+};
+class Line {
+private:
+    int n{};
+    Point* pts{};
+public:
+    Line(Point a, Point b);
+    Line(Point a, Point b, Point c);
+    Line(int n, Point* pts);
+    ~Line();
+    void add_point(Point p);
+    double get_length();
+    void print();
+};
+Line::Line(Point a, Point b) {
+    this->pts = new Point[2];
+    pts[0] = a;
+    pts[1] = b;
+}
+Line::Line(Point a, Point b, Point c) {
+    this->pts = new Point[3];
+    pts[0] = a;
+    pts[1] = b;
+    pts[2] = c;
+}
+Line::~Line() {
+    delete[] pts;
+}
+Line::Line(int n, Point* pts) {
+    this->n = n;
+    this->pts = pts;
+    for (int i = 0;i < n;i++) {
+        cin >> pts[i].x >> pts[i].y;
+    }
+}
+double distance_ptr(Point a, Point b) {
+    double dx = a.x - b.x;
+    double dy = a.y - b.y;
+    return sqrt(dx * dx + dy * dy);
+}
+void Line::add_point(Point p) {
+    Point* pts2 = new Point[n + 1];
+    for (int i = 0;i < n;i++) {
+        pts2[i] = pts[i];
+    }
+    pts2[n] = p;
+    delete[]pts;
+    pts = new Point[n + 1];
+    for (int i = 0;i < n + 1;i++) {
+        pts[i] = pts2[i];
+    }
+    n++;
+}
+double Line::get_length() {
+    double length = 0;
+    for (int i = 0;i < n - 1;i++) {
+        length += distance_ptr(pts[i], pts[i + 1]);
+    }
+    return length;
+}
+void Line::print() {
+    cout << fixed << setprecision(0);
+    for (int i = 0;i < n;i++) {
+        cout << "(" << pts[i].x << "," << " " << pts[i].y << ")" << " ";
+    }
+}
+int main() {
+    int n, t;
+    cin >> n;
+    Point* pts;
+    pts = new Point[n];
+    Line test(n, pts);
+    cin >> t;
+    char word[50] = {};
+    for (int i = 0;i < t;i++) {
+        cin >> word;
+        if (!strcmp(word, "Length")) cout << fixed << setprecision(2) << test.get_length() << endl;
+        else if (!strcmp(word, "Print")) test.print();
+        else if (!strcmp(word, "AddPoint")) {
+            Point p;
+            cin >> p.x >> p.y;
+            test.add_point(p);
+        }
+    }
+    return 0;
+}
