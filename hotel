@@ -1,95 +1,107 @@
 #include <iostream>
+#include <fstream>
 #include <cstring>
-#include <string>
-#include <cmath>
-#include <iomanip>
 using namespace std;
-struct Point {
-    double x;
-    double y;
-};
-class Line {
-private:
-    int n{};
-    Point* pts{};
+class Room {
+    int capacity; // Количество гостей, на которое комната рассчитана
+    bool occupied;       // Занята ли комната
 public:
-    Line(Point a, Point b);
-    Line(Point a, Point b, Point c);
-    Line(int n, Point* pts);
-    ~Line();
-    void add_point(Point p);
-    double get_length();
-    void print();
+    Room(int capacity = 1, bool occupied = false) : capacity(capacity), occupied(occupied) {}
+    bool is_occupied();  // Метод, который позволяет узнать, занята ли комната
+    int get_capacity();  // Метод, который получает количество гостей, которые умещаются в комнату
+    void reserve();      // Занять номер
+    void free();         // Освободить номер
 };
-Line::Line(Point a, Point b) {
-    this->pts = new Point[2];
-    pts[0] = a;
-    pts[1] = b;
+bool Room::is_occupied() {
+    return occupied;
 }
-Line::Line(Point a, Point b, Point c) {
-    this->pts = new Point[3];
-    pts[0] = a;
-    pts[1] = b;
-    pts[2] = c;
+int Room::get_capacity() {
+    return capacity;
 }
-Line::~Line() {
-    delete[] pts;
+void Room::reserve() {
+    occupied = true;
 }
-Line::Line(int n, Point* pts) {
-    this->n = n;
-    this->pts = pts;
-    for (int i = 0;i < n;i++) {
-        cin >> pts[i].x >> pts[i].y;
+void Room::free() {
+    occupied = false;
+}
+class Hotel {
+    int room_count;
+    Room* rooms;           // Дин. массив комнат
+public:
+    Hotel(int room_count, ifstream &f);
+    //Hotel(const Hotel&);
+    ~Hotel();
+    int get_room_count();  // Узнать количество комнат   
+    Room& get_room(int p); // Получить комнату под номером p
+    int count_free();      // Подсчитать количество свободных комнат
+    int find_room(int k);  // Найти комнату ровно на k гостей
+};
+Hotel::Hotel(int room_count, ifstream &f) : room_count(room_count) {
+    rooms = new Room[room_count];
+    for (int i = 0;i < room_count;i++) {
+        int c, z;
+        f >> c >> z;
+        rooms[i] = Room(c, z);
     }
 }
-double distance_ptr(Point a, Point b) {
-    double dx = a.x - b.x;
-    double dy = a.y - b.y;
-    return sqrt(dx * dx + dy * dy);
+Hotel::~Hotel() {
+    delete[] rooms;
 }
-void Line::add_point(Point p) {
-    Point* pts2 = new Point[n + 1];
-    for (int i = 0;i < n;i++) {
-        pts2[i] = pts[i];
-    }
-    pts2[n] = p;
-    delete[]pts;
-    pts = new Point[n + 1];
-    for (int i = 0;i < n + 1;i++) {
-        pts[i] = pts2[i];
-    }
-    n++;
+int Hotel::get_room_count() {
+    return room_count;
 }
-double Line::get_length() {
-    double length = 0;
-    for (int i = 0;i < n - 1;i++) {
-        length += distance_ptr(pts[i], pts[i + 1]);
-    }
-    return length;
+Room& Hotel::get_room(int p) {
+    return rooms[p];
 }
-void Line::print() {
-    cout << fixed << setprecision(0);
-    for (int i = 0;i < n;i++) {
-        cout << "(" << pts[i].x << "," << " " << pts[i].y << ")" << " ";
+int Hotel::count_free() {
+    int count = 0;
+    for (int i = 0;i < room_count;i++) {
+        if (!rooms[i].is_occupied())count++;
+    }
+    return count;
+}
+int Hotel::find_room(int k) {
+    for (int i = 0;i < room_count;i++) {
+        if (rooms[i].get_capacity() == k && !rooms[i].is_occupied()) { rooms[i].reserve(); return i; }
+    }
+    return -1;
+}
+Hotel load_hotel(ifstream &file) {
+    int room_count;
+    file >> room_count;
+    Hotel Eleon(room_count, file);
+    return Eleon;
+}
+void save_hotel(ofstream& file, Hotel &h) {
+    int rc = h.get_room_count();
+    file << rc << endl;
+    for (int i = 0;i < rc;i++) {
+        file << h.get_room(i).get_capacity() << " " << h.get_room(i).is_occupied() << endl;
     }
 }
 int main() {
-    int n, t;
-    cin >> n;
-    Point* pts;
-    pts = new Point[n];
-    Line test(n, pts);
-    cin >> t;
-    char word[50] = {};
-    for (int i = 0;i < t;i++) {
-        cin >> word;
-        if (!strcmp(word, "Length")) cout << fixed << setprecision(2) << test.get_length() << endl;
-        else if (!strcmp(word, "Print")) test.print();
-        else if (!strcmp(word, "AddPoint")) {
-            Point p;
-            cin >> p.x >> p.y;
-            test.add_point(p);
+    ifstream f("source.txt");
+    ofstream e("destination.txt");
+    Hotel Eleon = load_hotel(f);
+    int E;
+    f >> E;
+    for (int i = 0;i < E;i++) {
+        char command[10];
+        f >> command;
+        if (!strcmp(command, "RESERVE")) {
+        int p;
+        f >> p;
+        int I = Eleon.find_room(p);
+        Eleon.get_room(I).reserve();
+        }
+        else if (!strcmp(command, "STATUS")) { e << Eleon.count_free() << endl; }
+        else if (!strcmp(command, "FREE")) {
+            int p;
+            f >> p;
+            int I = Eleon.find_room(p);
+            Eleon.get_room(I).free();
         }
     }
+    save_hotel(e, Eleon);
     return 0;
 }
